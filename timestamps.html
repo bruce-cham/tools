@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 8px;
+            font-size: 16px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h2>时间戳转换器</h2>
+    <label for="timestamp">输入时间戳（秒）:</label>
+    <input type="number" id="timestamp" placeholder="例如 1700000000">
+    <button onclick="convertTimestamp()">转换</button>
+    <div id="result"></div>
+
+    <script>
+        function convertTimestamp() {
+            let timestamp = document.getElementById("timestamp").value;
+            if (!timestamp) {
+                alert("请输入时间戳！");
+                return;
+            }
+            
+            // 确保时间戳是整数
+            timestamp = parseInt(timestamp);
+            
+            // 转换为标准时间
+            let date = new Date(timestamp * 1000);
+            let formattedDate = date.toLocaleString();
+
+            // 显示结果
+            document.getElementById("result").innerHTML = "转换后的时间：" + formattedDate;
+        }
+    </script>
+</body>
+</html>
