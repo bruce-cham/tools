@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式交互式教程</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: rgba(255, 255, 255, 0.97);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .regex-section, .test-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        
+        .regex-input {
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .test-text {
+            height: 150px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%);
+            color: white;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(178, 31, 31, 0.4);
+        }
+        
+        .clear-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .result-container {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .matches {
+            padding: 15px;
+            background-color: #f1f8e9;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+        }
+        
+        .no-matches {
+            padding: 15px;
+            background-color: #ffebee;
+            border-radius: 6px;
+            color: #c62828;
+        }
+        
+        .cheat-sheet {
+            margin-top: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+            border-radius: 8px;
+        }
+        
+        .cheat-sheet h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .cheat-sheet-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .cheat-item {
+            padding: 15px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .cheat-item h3 {
+            color: #1a237e;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .cheat-item p {
+            margin-bottom: 8px;
+        }
+        
+        .cheat-item code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .example-section {
+            margin-top: 30px;
+        }
+        
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .example-card {
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .example-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .example-card h4 {
+            color: #1a237e;
+            margin-bottom: 10px;
+        }
+        
+        .example-card code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .example-desc {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #ecf0f1;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>正则表达式交互式教程</h1>
+            <p class="description">
+                学习、测试和掌握正则表达式。在下方输入正则表达式和测试文本，查看匹配结果。
+                使用速查表作为参考，或点击示例快速尝试。
+            </p>
+        </header>
+        
+        <div class="content">
+            <div class="regex-section">
+                <div class="section-header">
+                    <h2>正则表达式测试</h2>
+                </div>
+                
+                <div class="input-group">
+                    <label for="regex-input">正则表达式</label>
+                    <input type="text" id="regex-input" class="regex-input" placeholder="例如: [A-Za-z]+\\d+">
+                </div>
+                
+                <div class="input-group">
+                    <label for="test-text">测试文本</label>
+                    <textarea id="test-text" class="test-text" placeholder="在此输入要测试的文本...">例如，从这个HTML片段中提取链接文本：
+&lt;div class="ClassHead-wrap clearfix"&gt;
+    &lt;a href="/tools/unicode.aspx"&gt;Unicode编码&lt;/a&gt;
+    &lt;a href="/tools/utf-8.aspx"&gt;UTF-8编码&lt;/a&gt;
+    &lt;a href="/tools/urlencode.aspx"&gt;URL编码/解码&lt;/a&gt;
+    &lt;a href="/tools/unixtime.aspx"&gt;Unix时间戳&lt;/a&gt;
+    &lt;a href="/tools/native_ascii.aspx"&gt;Ascii/Native编码互转&lt;/a&gt;
+    &lt;a href="/hex"&gt;Hex编码/解码&lt;/a&gt;
+    &lt;a href="javascript:" class="CHeadcur"&gt;Html编码/解码&lt;/a&gt;
+    &lt;a href="/tools/baseAll"&gt;BASE编码/解码&lt;/a&gt;
+&lt;/div&gt;</textarea>
+                </div>
+                
+                <div class="button-container">
+                    <button class="test-btn" id="test-btn">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18px" height="18px">
+                            <path d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                        </svg>
+                        测试正则表达式
+                    </button>
+                    <button class="clear-btn" id="clear-btn">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18px" height="18px">
+                            <path d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                        清除
+                    </button>
+                </div>
+                
+                <div class="result-container">
+                    <div class="result-title">匹配结果:</div>
+                    <div id="match-result" class="no-matches">尚未进行测试</div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <div class="section-header">
+                    <h2>正则表达式速查表</h2>
+                </div>
+                
+                <div class="cheat-sheet">
+                    <div class="cheat-sheet-content">
+                        <div class="cheat-item">
+                            <h3>字符类</h3>
+                            <p><code>.</code> - 任何字符（除换行外）</p>
+                            <p><code>\d</code> - 数字 [0-9]</p>
+                            <p><code>\D</code> - 非数字 [^0-9]</p>
+                            <p><code>\w</code> - 单词字符 [A-Za-z0-9_]</p>
+                            <p><code>\W</code> - 非单词字符</p>
+                            <p><code>\s</code> - 空白字符</p>
+                            <p><code>\S</code> - 非空白字符</p>
+                        </div>
+                        
+                        <div class="cheat-item">
+                            <h3>锚点</h3>
+                            <p><code>^</code> - 字符串开始</p>
+                            <p><code>$</code> - 字符串结束</p>
+                            <p><code>\b</code> - 单词边界</p>
+                            <p><code>\B</code> - 非单词边界</p>
+                        </div>
+                        
+                        <div class="cheat-item">
+                            <h3>量词</h3>
+                            <p><code>*</code> - 0次或多次</p>
+                            <p><code>+</code> - 1次或多次</p>
+                            <p><code>?</code> - 0次或1次</p>
+                            <p><code>{n}</code> - 恰好n次</p>
+                            <p><code>{n,}</code> - n次或更多</p>
+                            <p><code>{n,m}</code> - n到m次</p>
+                        </div>
+                        
+                        <div class="cheat-item">
+                            <h3>分组与捕获</h3>
+                            <p><code>(...)</code> - 捕获分组</p>
+                            <p><code>(?:...)</code> - 非捕获分组</p>
+                            <p><code>|</code> - 或</p>
+                            <p><code>\1</code> - 反向引用第一个分组</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="example-section">
+                    <div class="section-header">
+                        <h2>常用示例</h2>
+                    </div>
+                    
+                    <div class="example-grid">
+                        <div class="example-card" data-regex="[A-Za-z]+\d+">
+                            <h4>字母+数字</h4>
+                            <code>[A-Za-z]+\d+</code>
+                            <p class="example-desc">匹配一个或多个字母后跟一个或多个数字</p>
+                        </div>
+                        
+                        <div class="example-card" data-regex="\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b">
+                            <h4>电子邮件</h4>
+                            <code>\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b</code>
+                            <p class="example-desc">匹配电子邮件地址</p>
+                        </div>
+                        
+                        <div class="example-card" data-regex="https?://[^\s]+">
+                            <h4>URL</h4>
+                            <code>https?://[^\s]+</code>
+                            <p class="example-desc">匹配HTTP或HTTPS URL</p>
+                        </div>
+                        
+                        <div class="example-card" data-regex="&lt;a[^&gt;]*&gt;([^&lt;]+)&lt;/a&gt;">
+                            <h4>提取链接文本</h4>
+                            <code>&lt;a[^&gt;]*&gt;([^&lt;]+)&lt;/a&gt;</code>
+                            <p class="example-desc">从HTML中提取链接文本</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>正则表达式交互式教程 &copy; 2023 | 开发者工具</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const regexInput = document.getElementById('regex-input');
+            const testText = document.getElementById('test-text');
+            const testBtn = document.getElementById('test-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const matchResult = document.getElementById('match-result');
+            const exampleCards = document.querySelectorAll('.example-card');
+            
+            // 测试按钮事件
+            testBtn.addEventListener('click', testRegex);
+            
+            // 清除按钮事件
+            clearBtn.addEventListener('click', function() {
+                regexInput.value = '';
+                testText.value = '';
+                matchResult.innerHTML = '尚未进行测试';
+                matchResult.className = 'no-matches';
+            });
+            
+            // 示例卡片点击事件
+            exampleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const regex = this.getAttribute('data-regex');
+                    regexInput.value = regex;
+                    testRegex();
+                });
+            });
+            
+            // 测试正则表达式函数
+            function testRegex() {
+                const regexValue = regexInput.value.trim();
+                const testValue = testText.value;
+                
+                if (!regexValue) {
+                    matchResult.innerHTML = '请输入正则表达式';
+                    matchResult.className = 'no-matches';
+                    return;
+                }
+                
+                try {
+                    // 创建正则表达式对象
+                    const regex = new RegExp(regexValue, 'g');
+                    
+                    // 执行匹配
+                    const matches = testValue.match(regex);
+                    
+                    if (matches && matches.length > 0) {
+                        // 显示匹配结果
+                        matchResult.innerHTML = '';
+                        matches.forEach((match, index) => {
+                            const matchElement = document.createElement('div');
+                            matchElement.textContent = `${index + 1}. ${match}`;
+                            matchResult.appendChild(matchElement);
+                        });
+                        matchResult.className = 'matches';
+                    } else {
+                        matchResult.innerHTML = '没有找到匹配项';
+                        matchResult.className = 'no-matches';
+                    }
+                } catch (error) {
+                    matchResult.innerHTML = `错误: ${error.message}`;
+                    matchResult.className = 'no-matches';
+                }
+            }
+            
+            // 初始示例测试
+            regexInput.value = '<a[^>]*>([^<]+)</a>';
+            testRegex();
+        });
+    </script>
+</body>
+</html>
