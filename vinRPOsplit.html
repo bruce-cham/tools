@@ -53,6 +53,7 @@ function splitLineInThrees(line) {
 function splitText() {
     // 获取输入文本框的内容
     const inputText = document.getElementById('inputText').value;
+    document.getElementById('copyStatus').textContent = '';
 
     // 按行分割输入文本
     const lines = inputText.split('\n');
