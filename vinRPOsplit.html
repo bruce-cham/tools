@@ -2,24 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>逐行字符串分拆工具</title>
 <style>
     body {
         font-family: Arial, sans-serif;
-					  
-								
-							
-					  
-				  
-								  
+
     }
     .container {
-						  
-					  
-						   
-												
-				   
-						 
+
         display: flex;
         justify-content: space-around;
         align-items: flex-start;
@@ -30,28 +21,15 @@
         height: 300px;
         padding: 10px;
         font-size: 16px;
-							
-							   
-						   
-					 
+
     }
     button {
         margin-top: 20px;
         padding: 10px 20px;
         font-size: 16px;
-					 
-						   
-						
-									
-	 
-				  
-								  
-					 
+
     }
-					   
-					  
-									   
-	 
+
 </style>
 </head>
 <body>
@@ -64,11 +42,12 @@
     </div>
     <textarea id="outputText" placeholder="分拆后的结果会显示在这里..." readonly></textarea>
 </div>
+<p id="copyStatus" role="status"></p>
 
 <script>
 function splitLineInThrees(line) {
     // 分割单行文本为每三个字符一组，并用空格连接
-    return line.match(/.{1,3}/g)?.join(' ') || '';
+    return line.match(/.{1,3}/gu)?.join(' ') || '';
 }
 
 function splitText() {
@@ -82,7 +61,7 @@ function splitText() {
     const processedLines = lines.map(line => {
         // 移除行首和行尾的空白字符
         const cleanLine = line.trim();
-        
+
         // 如果行为空，则返回空字符串
         if (!cleanLine) return '';
 
@@ -96,14 +75,23 @@ function splitText() {
     // 将分拆后的结果显示在输出文本框中
     document.getElementById('outputText').value = resultText;
 }
-function copyToClipboard() {
-    const outputText = document.getElementById('outputText');
-    outputText.select(); // 选择文本框中的所有文本
-    outputText.setSelectionRange(0, 99999); // 对于移动设备
-    document.execCommand('copy'); // 复制选中的文本到剪贴板
-
-    // 可选：提供反馈给用户
-    alert('分拆结果已复制到剪贴板！');
+async function copyToClipboard() {
+    const output = document.getElementById('outputText');
+    const status = document.getElementById('copyStatus');
+    if (!output.value) {
+        status.textContent = '没有可复制的结果';
+        return;
+    }
+    try {
+        if (!navigator.clipboard) throw new Error('剪贴板不可用');
+        await navigator.clipboard.writeText(output.value);
+        status.textContent = '分拆结果已复制到剪贴板！';
+    } catch (error) {
+        output.focus();
+        output.select();
+        output.setSelectionRange(0, output.value.length);
+        status.textContent = '无法自动复制，已选中结果，请按 Ctrl+C 或长按复制。';
+    }
 }
 </script>
 

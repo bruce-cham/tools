@@ -320,58 +320,38 @@
                 value = value.trim();
                 
                 try {
-                    // 将输入值转换为十进制
-                    let decimalValue;
-                    if (inputType === '16') {
-                        // 十六进制可能包含字母，转换为大写
-                        decimalValue = parseInt(value.toUpperCase(), 16);
-                    } else {
-                        decimalValue = parseInt(value, parseInt(inputType));
-                    }
-                    
-                    if (isNaN(decimalValue)) {
-                        throw new Error('无效的输入值');
-                    }
-                    
-                    // 将十进制转换为目标进制
-                    let result;
-                    switch(outputType) {
-                        case '2':
-                            result = decimalValue.toString(2);
-                            break;
-                        case '8':
-                            result = decimalValue.toString(8);
-                            break;
-                        case '10':
-                            result = decimalValue.toString(10);
-                            break;
-                        case '16':
-                            result = decimalValue.toString(16).toUpperCase();
-                            break;
-                    }
-                    
-                    // 创建结果元素
-                    const resultBox = document.createElement('div');
-                    resultBox.className = 'result-box';
-                    resultBox.innerHTML = `
-                        <div class="result-title">${value} (${getBaseName(inputType)})</div>
-                        <div class="result-value">${result} (${getBaseName(outputType)})</div>
-                    `;
-                    
-                    resultsContainer.appendChild(resultBox);
+                    const sign = value.startsWith('-') ? -1n : 1n;
+                    let digits = value.replace(/^[+-]/, '');
+                    const prefixes = { '2': /^0b/i, '8': /^0o/i, '16': /^0x/i };
+                    if (prefixes[inputType]) digits = digits.replace(prefixes[inputType], '');
+                    const validDigits = { '2': /^[01]+$/, '8': /^[0-7]+$/, '10': /^[0-9]+$/, '16': /^[0-9a-f]+$/i };
+                    if (!validDigits[inputType].test(digits)) throw new Error('无效的输入值或进制数字');
+                    const prefix = { '2': '0b', '8': '0o', '10': '', '16': '0x' }[inputType];
+                    const decimalValue = sign * BigInt(prefix + digits);
+                    const result = decimalValue.toString(Number(outputType)).toUpperCase();
+                    appendResult(value, result + ' (' + getBaseName(outputType) + ')');
                 } catch (error) {
-                    const resultBox = document.createElement('div');
-                    resultBox.className = 'result-box';
-                    resultBox.innerHTML = `
-                        <div class="result-title">${value} (${getBaseName(inputType)})</div>
-                        <div class="result-value" style="color: #e74c3c;">转换错误: ${error.message}</div>
-                    `;
-                    
-                    resultsContainer.appendChild(resultBox);
+                    appendResult(value, '转换错误: ' + error.message, true);
                 }
+
             });
         }
         
+        function appendResult(value, result, isError = false) {
+            const box = document.createElement('div');
+            box.className = 'result-box';
+            const title = document.createElement('div');
+            title.className = 'result-title';
+            title.textContent = value + ' (' + getBaseName(document.getElementById('inputType').value) + ')';
+            const output = document.createElement('div');
+            output.className = 'result-value';
+            output.textContent = result;
+            if (isError) output.style.color = '#e74c3c';
+            else output.dataset.copy = result;
+            box.append(title, output);
+            document.getElementById('results').appendChild(box);
+        }
+
         function getBaseName(base) {
             switch(base) {
                 case '2': return '二进制';
@@ -382,8 +362,8 @@
             }
         }
         
-        function copyResults() {
-            const results = document.querySelectorAll('.result-value');
+        async function copyResults() {
+            const results = document.querySelectorAll('.result-value[data-copy]');
             if (results.length === 0) {
                 showNotification('没有可复制的结果', true);
                 return;
@@ -395,14 +375,13 @@
                 textToCopy += result.textContent + '\n';
             });
             
-            // 使用Clipboard API复制文本
-            navigator.clipboard.writeText(textToCopy.trim())
-                .then(() => {
-                    showNotification('结果已复制到剪贴板！');
-                })
-                .catch(err => {
-                    showNotification('复制失败: ' + err, true);
-                });
+            try {
+                if (!navigator.clipboard) throw new Error('当前环境不支持剪贴板，请手动选择结果复制');
+                await navigator.clipboard.writeText(textToCopy.trim());
+                showNotification('结果已复制到剪贴板！');
+            } catch (error) {
+                showNotification('复制失败: ' + error.message, true);
+            }
         }
         
         function clearAll() {

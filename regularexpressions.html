@@ -301,6 +301,11 @@
                 </div>
                 
                 <div class="input-group">
+                    <label for="regex-flags">标志（例如 g、i、m、s、u、y）</label>
+                    <input type="text" id="regex-flags" class="regex-input" value="g" spellcheck="false">
+                </div>
+
+                <div class="input-group">
                     <label for="test-text">测试文本</label>
                     <textarea id="test-text" class="test-text" placeholder="在此输入要测试的文本...">例如，从这个HTML片段中提取链接文本：
 &lt;div class="ClassHead-wrap clearfix"&gt;
@@ -396,9 +401,9 @@
                             <p class="example-desc">匹配一个或多个字母后跟一个或多个数字</p>
                         </div>
                         
-                        <div class="example-card" data-regex="\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b">
+                        <div class="example-card" data-regex="\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b">
                             <h4>电子邮件</h4>
-                            <code>\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b</code>
+                            <code>\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b</code>
                             <p class="example-desc">匹配电子邮件地址</p>
                         </div>
                         
@@ -439,7 +444,7 @@
             clearBtn.addEventListener('click', function() {
                 regexInput.value = '';
                 testText.value = '';
-                matchResult.innerHTML = '尚未进行测试';
+                matchResult.textContent = '尚未进行测试';
                 matchResult.className = 'no-matches';
             });
             
@@ -454,37 +459,39 @@
             
             // 测试正则表达式函数
             function testRegex() {
-                const regexValue = regexInput.value.trim();
+                const regexValue = regexInput.value;
                 const testValue = testText.value;
                 
                 if (!regexValue) {
-                    matchResult.innerHTML = '请输入正则表达式';
+                    matchResult.textContent = '请输入正则表达式';
                     matchResult.className = 'no-matches';
                     return;
                 }
                 
                 try {
                     // 创建正则表达式对象
-                    const regex = new RegExp(regexValue, 'g');
+                    const regex = new RegExp(regexValue, document.getElementById('regex-flags').value);
                     
                     // 执行匹配
-                    const matches = testValue.match(regex);
+                    const matches = regex.global
+                        ? testValue.match(regex)
+                        : (() => { const match = regex.exec(testValue); return match ? [match[0]] : null; })();
                     
                     if (matches && matches.length > 0) {
                         // 显示匹配结果
-                        matchResult.innerHTML = '';
+                        matchResult.textContent = '';
                         matches.forEach((match, index) => {
                             const matchElement = document.createElement('div');
-                            matchElement.textContent = `${index + 1}. ${match}`;
+                            matchElement.textContent = `${index + 1}. ${match === '' ? '（空匹配）' : match}`;
                             matchResult.appendChild(matchElement);
                         });
                         matchResult.className = 'matches';
                     } else {
-                        matchResult.innerHTML = '没有找到匹配项';
+                        matchResult.textContent = '没有找到匹配项';
                         matchResult.className = 'no-matches';
                     }
                 } catch (error) {
-                    matchResult.innerHTML = `错误: ${error.message}`;
+                    matchResult.textContent = `错误: ${error.message}`;
                     matchResult.className = 'no-matches';
                 }
             }
