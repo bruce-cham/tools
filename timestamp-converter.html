@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳转换器</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="tool-page">
+    <main class="container">
+        <header class="page-header">
+            <a class="back-link" href="index.html">← 返回首页</a>
+            <h1>时间戳转换器</h1>
+            <p class="description">自动识别秒或毫秒时间戳，查看本地时间和 UTC。</p>
+        </header>
+        <section class="panel">
+            <label for="timestamp">输入时间戳（秒或13位毫秒）:</label>
+            <input type="text" inputmode="numeric" id="timestamp" placeholder="例如 1700000000">
+            <button onclick="convertTimestamp()">转换</button>
+            <div id="result" role="status" class="result-box"></div>
+        </section>
+    </main>
+
+    <script>
+        function convertTimestamp() {
+            const value = document.getElementById("timestamp").value.trim();
+            const result = document.getElementById("result");
+            if (!/^[+-]?\d+$/.test(value)) {
+                result.textContent = "请输入有效的整数时间戳！";
+                return;
+            }
+            const digits = value.replace(/^[+-]/, '');
+            const timestamp = Number(value);
+            const date = new Date(digits.length === 13 ? timestamp : timestamp * 1000);
+            if (!Number.isSafeInteger(timestamp) || Number.isNaN(date.getTime())) {
+                result.textContent = "时间戳超出有效日期范围！";
+                return;
+            }
+            result.textContent = "本地时间：" + date.toLocaleString() + "\nUTC/ISO：" + date.toISOString();
+        }
+        document.getElementById("timestamp").addEventListener("keydown", event => {
+            if (event.key === "Enter") convertTimestamp();
+        });
+    </script>
+</body>
+</html>
