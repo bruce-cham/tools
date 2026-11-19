@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,36 +11,185 @@
         <header class="page-header">
             <a class="back-link" href="index.html">← 返回首页</a>
             <h1>时间戳转换器</h1>
-            <p class="description">自动识别秒或毫秒时间戳，查看本地时间和 UTC。</p>
+            <p class="description">实时查看当前时间，转换秒/毫秒时间戳或本地/UTC 日期。</p>
         </header>
         <section class="panel">
-            <label for="timestamp">输入时间戳（秒或13位毫秒）:</label>
-            <input type="text" inputmode="numeric" id="timestamp" placeholder="例如 1700000000">
-            <button onclick="convertTimestamp()">转换</button>
+            <h2>当前时间</h2>
+            <div id="current-time"></div>
+            <button id="use-current" type="button">使用当前时间</button>
+        </section>
+        <section class="panel result-section">
+            <h2>时间戳 → 日期</h2>
+            <div class="form-group">
+                <label for="timestamp">输入整数时间戳</label>
+                <input type="text" inputmode="numeric" id="timestamp" placeholder="例如 1700000000">
+            </div>
+            <label for="timestamp-unit">输入单位</label>
+            <select id="timestamp-unit">
+                <option value="auto">自动（13 位为毫秒，否则为秒）</option>
+                <option value="seconds">秒</option>
+                <option value="milliseconds">毫秒</option>
+            </select>
+            <div class="buttons">
+                <button id="convert-timestamp" type="button">转换</button>
+            </div>
             <div id="result" role="status" class="result-box"></div>
         </section>
+        <section class="panel result-section">
+            <h2>日期 → 时间戳</h2>
+            <div class="form-group">
+                <label for="date-input">输入日期时间</label>
+                <input type="datetime-local" id="date-input" step="1">
+            </div>
+            <label for="date-zone">时间基准</label>
+            <select id="date-zone">
+                <option value="local">本地时间</option>
+                <option value="utc">UTC</option>
+            </select>
+            <div class="buttons">
+                <button id="convert-date" type="button">转换日期</button>
+            </div>
+            <div id="reverse-result" role="status" class="result-box"></div>
+        </section>
+        <p id="timestamp-copy-status" role="status"></p>
     </main>
 
     <script>
-        function convertTimestamp() {
-            const value = document.getElementById("timestamp").value.trim();
-            const result = document.getElementById("result");
-            if (!/^[+-]?\d+$/.test(value)) {
-                result.textContent = "请输入有效的整数时间戳！";
-                return;
+        const timestampInput = document.getElementById('timestamp');
+        const unitInput = document.getElementById('timestamp-unit');
+        const result = document.getElementById('result');
+        const dateInput = document.getElementById('date-input');
+        const dateZone = document.getElementById('date-zone');
+        const reverseResult = document.getElementById('reverse-result');
+        const relativeFormat = new Intl.RelativeTimeFormat('zh-CN', { numeric: 'always' });
+        let conversionTimer;
+        let convertedDate;
+
+        async function copyValue(value) {
+            const status = document.getElementById('timestamp-copy-status');
+            try {
+                if (!navigator.clipboard) throw new Error('当前环境不支持剪贴板，请手动选择复制');
+                await navigator.clipboard.writeText(value);
+                status.textContent = '已复制到剪贴板';
+            } catch (error) {
+                status.textContent = '复制失败: ' + error.message;
             }
-            const digits = value.replace(/^[+-]/, '');
-            const timestamp = Number(value);
-            const date = new Date(digits.length === 13 ? timestamp : timestamp * 1000);
-            if (!Number.isSafeInteger(timestamp) || Number.isNaN(date.getTime())) {
-                result.textContent = "时间戳超出有效日期范围！";
-                return;
-            }
-            result.textContent = "本地时间：" + date.toLocaleString() + "\nUTC/ISO：" + date.toISOString();
         }
-        document.getElementById("timestamp").addEventListener("keydown", event => {
-            if (event.key === "Enter") convertTimestamp();
+
+        function outputRow(container, key, label, value) {
+            const row = document.createElement('div');
+            row.className = 'timestamp-row';
+            const title = document.createElement('span');
+            title.textContent = label + '：';
+            const output = document.createElement('span');
+            output.dataset.output = key;
+            output.textContent = value;
+            const copy = document.createElement('button');
+            copy.className = 'secondary value-copy';
+            copy.type = 'button';
+            copy.textContent = '复制';
+            copy.setAttribute('aria-label', '复制' + label);
+            copy.addEventListener('click', () => copyValue(output.textContent));
+            row.append(title, output, copy);
+            container.append(row);
+        }
+
+        function relativeTime(date) {
+            const seconds = (date.getTime() - Date.now()) / 1000;
+            const units = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60], ['second', 1]];
+            const [unit, divisor] = units.find(([, size]) => Math.abs(seconds) >= size) || units[units.length - 1];
+            return relativeFormat.format(Math.round(seconds / divisor), unit);
+        }
+
+        function showError(container, message) {
+            container.textContent = message;
+            container.classList.add('inline-error');
+        }
+
+        function resetOutput(container) {
+            container.replaceChildren();
+            container.classList.remove('inline-error');
+            document.getElementById('timestamp-copy-status').textContent = '';
+        }
+
+        function convertTimestamp() {
+            clearTimeout(conversionTimer);
+            convertedDate = null;
+            resetOutput(result);
+            const value = timestampInput.value.trim();
+            if (!/^[+-]?\d+$/.test(value)) {
+                showError(result, '请输入有效的整数时间戳！');
+                return;
+            }
+            const isMilliseconds = unitInput.value === 'milliseconds' ||
+                (unitInput.value === 'auto' && value.replace(/^[+-]/, '').length === 13);
+            const timestamp = Number(value);
+            const date = new Date(isMilliseconds ? timestamp : timestamp * 1000);
+            if (!Number.isSafeInteger(timestamp) || Number.isNaN(date.getTime())) {
+                showError(result, '时间戳超出有效日期范围！');
+                return;
+            }
+            convertedDate = date;
+            outputRow(result, 'local', '本地时间', date.toLocaleString());
+            outputRow(result, 'iso', 'UTC/ISO', date.toISOString());
+            outputRow(result, 'relative', '相对时间', relativeTime(date));
+            outputRow(result, 'seconds', 'Unix 秒', String(date.getTime() / 1000));
+            outputRow(result, 'milliseconds', 'Unix 毫秒', String(date.getTime()));
+        }
+
+        function scheduleConversion() {
+            clearTimeout(conversionTimer);
+            convertedDate = null;
+            conversionTimer = setTimeout(convertTimestamp, 150);
+        }
+
+        function convertDate() {
+            resetOutput(reverseResult);
+            const value = dateInput.value;
+            if (!value) {
+                showError(reverseResult, '请输入有效的日期时间！');
+                return;
+            }
+            const parts = /^(\d{4,})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d))?$/.exec(value);
+            const utc = dateZone.value === 'utc';
+            const date = new Date(value + (utc ? 'Z' : ''));
+            const prefix = utc ? 'getUTC' : 'get';
+            const actual = ['FullYear', 'Month', 'Date', 'Hours', 'Minutes', 'Seconds'].map(field => date[prefix + field]());
+            actual[1] += 1;
+            if (!parts || Number.isNaN(date.getTime()) ||
+                actual.some((number, index) => number !== Number(parts[index + 1] || 0))) {
+                showError(reverseResult, '请输入有效的日期时间（该时间可能不存在）！');
+                return;
+            }
+            outputRow(reverseResult, 'seconds', 'Unix 秒', String(Math.floor(date.getTime() / 1000)));
+            outputRow(reverseResult, 'milliseconds', 'Unix 毫秒', String(date.getTime()));
+        }
+
+        const clock = document.getElementById('current-time');
+        outputRow(clock, 'seconds', '当前 Unix 秒', '');
+        outputRow(clock, 'milliseconds', '当前 Unix 毫秒', '');
+        function tick() {
+            const now = Date.now();
+            clock.querySelector('[data-output="seconds"]').textContent = String(Math.floor(now / 1000));
+            clock.querySelector('[data-output="milliseconds"]').textContent = String(now);
+            const relative = result.querySelector('[data-output="relative"]');
+            if (relative && convertedDate) relative.textContent = relativeTime(convertedDate);
+        }
+        tick();
+        setInterval(tick, 1000);
+        timestampInput.addEventListener('input', scheduleConversion);
+        unitInput.addEventListener('change', scheduleConversion);
+        timestampInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') convertTimestamp();
         });
+        document.getElementById('convert-timestamp').addEventListener('click', convertTimestamp);
+        document.getElementById('use-current').addEventListener('click', () => {
+            timestampInput.value = String(unitInput.value === 'seconds' ? Math.floor(Date.now() / 1000) : Date.now());
+            convertTimestamp();
+        });
+        dateInput.addEventListener('input', convertDate);
+        dateZone.addEventListener('change', convertDate);
+        document.getElementById('convert-date').addEventListener('click', convertDate);
     </script>
 </body>
 </html>

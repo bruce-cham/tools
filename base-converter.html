@@ -11,7 +11,7 @@
         <header class="page-header">
             <a class="back-link" href="index.html">← 返回首页</a>
             <h1>进制转换工具</h1>
-            <p class="description">支持二进制、八进制、十进制和十六进制之间的相互转换，可批量处理多个数值</p>
+            <p class="description">实时批量转换大整数，同时查看常用进制与自定义进制结果</p>
         </header>
         
         <div class="input-section">
@@ -23,9 +23,14 @@
                         <option value="8">八进制 (Octal)</option>
                         <option value="10" selected>十进制 (Decimal)</option>
                         <option value="16">十六进制 (Hexadecimal)</option>
+                        <option value="custom">自定义进制</option>
                     </select>
                 </div>
                 
+                <div class="form-group" id="customInputGroup" hidden>
+                    <label for="customInputBase">自定义输入进制（2–36）</label>
+                    <input type="number" id="customInputBase" min="2" max="36" step="1" value="36">
+                </div>
                 <div class="form-group">
                     <label for="inputValue">输入数值（每行一个）</label>
                     <textarea id="inputValue" placeholder="请输入要转换的数值，每行一个&#10;例如：&#10;255&#10;1024&#10;4096"></textarea>
@@ -34,13 +39,9 @@
             
             <div>
                 <div class="form-group">
-                    <label for="outputType">输出进制类型</label>
-                    <select id="outputType">
-                        <option value="2">二进制 (Binary)</option>
-                        <option value="8">八进制 (Octal)</option>
-                        <option value="10">十进制 (Decimal)</option>
-                        <option value="16" selected>十六进制 (Hexadecimal)</option>
-                    </select>
+                    <label for="customOutputBase">额外输出进制（2–36）</label>
+                    <input type="number" id="customOutputBase" min="2" max="36" step="1" value="36">
+                    <p id="baseStatus" class="inline-error" role="status"></p>
                 </div>
                 
                 <div class="buttons">
@@ -64,12 +65,12 @@
         <div class="instructions">
             <h3>使用说明</h3>
             <ul>
-                <li>选择输入和输出的进制类型</li>
+                <li>选择输入进制和额外输出进制（2–36）</li>
                 <li>在文本框中输入要转换的数值，每行一个</li>
-                <li>点击"转换"按钮进行转换</li>
+                <li>输入后自动转换，也可点击“转换”；二进制和十六进制按四位分组显示</li>
                 <li>点击"复制结果"按钮将转换结果复制到剪贴板</li>
                 <li>点击"清空"按钮清除所有输入和结果</li>
-                <li>十六进制数值可以使用大写或小写字母A-F</li>
+                <li>数字使用 0–9、a–z，不区分大小写；复制不包含显示用空格</li>
             </ul>
         </div>
     </main>
@@ -81,121 +82,152 @@
     <div class="notification" id="notification" role="status">结果已复制到剪贴板！</div>
 
     <script>
+        const inputType = document.getElementById('inputType');
+        const inputValue = document.getElementById('inputValue');
+        const customInputBase = document.getElementById('customInputBase');
+        const customOutputBase = document.getElementById('customOutputBase');
+        const resultsContainer = document.getElementById('results');
+        let conversionTimer;
+        let notificationTimer;
+
+        function readBase(value) {
+            const base = Number(value);
+            if (!Number.isInteger(base) || base < 2 || base > 36) {
+                throw new Error('进制必须是 2–36 之间的整数');
+            }
+            return base;
+        }
+
+        function parseInteger(value, base) {
+            const sign = value.startsWith('-') ? -1n : 1n;
+            let digits = value.replace(/^[+-]/, '').toLowerCase();
+            const prefixes = { 2: /^0b/i, 8: /^0o/i, 16: /^0x/i };
+            if (prefixes[base]) digits = digits.replace(prefixes[base], '');
+            if (!/^[0-9a-z]+$/.test(digits)) throw new Error('无效的输入值或进制数字');
+            let result = 0n;
+            for (const char of digits) {
+                const digit = parseInt(char, 36);
+                if (digit >= base) throw new Error('无效的输入值或进制数字');
+                result = result * BigInt(base) + BigInt(digit);
+            }
+            return sign * result;
+        }
+
+        function element(tag, className, text) {
+            const node = document.createElement(tag);
+            node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
+        }
+
+        function grouped(value) {
+            const sign = value.startsWith('-') ? '-' : '';
+            const digits = value.replace(/^-/, '');
+            return sign + digits.replace(/\B(?=(.{4})+$)/g, ' ');
+        }
+
         function convert() {
-            const inputType = document.getElementById('inputType').value;
-            const outputType = document.getElementById('outputType').value;
-            const inputValue = document.getElementById('inputValue').value;
-            const resultsContainer = document.getElementById('results');
-            
-            // 清空之前的结果
-            resultsContainer.innerHTML = '';
-            
-            // 分割输入为多行
-            const values = inputValue.split('\n').filter(val => val.trim() !== '');
-            
-            if (values.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="result-box">
-                        <div class="result-title">错误</div>
-                        <div class="result-value">请输入有效数值</div>
-                    </div>
-                `;
+            clearTimeout(conversionTimer);
+            document.getElementById('customInputGroup').hidden = inputType.value !== 'custom';
+            const status = document.getElementById('baseStatus');
+            status.textContent = '';
+            resultsContainer.replaceChildren();
+            let base;
+            let extraBase;
+            try {
+                base = readBase(inputType.value === 'custom' ? customInputBase.value : inputType.value);
+            } catch (error) {
+                status.textContent = '输入' + error.message;
                 return;
             }
-            
-            // 转换每个值
-            values.forEach((value, index) => {
-                value = value.trim();
-                
+            try {
+                extraBase = readBase(customOutputBase.value);
+            } catch (error) {
+                status.textContent = '输出' + error.message;
+            }
+            const values = inputValue.value.split('\n').map(value => value.trim()).filter(Boolean);
+            if (!values.length) {
+                resultsContainer.append(element('div', 'result-box', '请输入有效数值'));
+                return;
+            }
+            for (const value of values) {
+                const box = element('div', 'result-box');
+                box.append(element('div', 'result-title', value + '（' + base + ' 进制）'));
                 try {
-                    const sign = value.startsWith('-') ? -1n : 1n;
-                    let digits = value.replace(/^[+-]/, '');
-                    const prefixes = { '2': /^0b/i, '8': /^0o/i, '16': /^0x/i };
-                    if (prefixes[inputType]) digits = digits.replace(prefixes[inputType], '');
-                    const validDigits = { '2': /^[01]+$/, '8': /^[0-7]+$/, '10': /^[0-9]+$/, '16': /^[0-9a-f]+$/i };
-                    if (!validDigits[inputType].test(digits)) throw new Error('无效的输入值或进制数字');
-                    const prefix = { '2': '0b', '8': '0o', '10': '', '16': '0x' }[inputType];
-                    const decimalValue = sign * BigInt(prefix + digits);
-                    const result = decimalValue.toString(Number(outputType)).toUpperCase();
-                    appendResult(value, result + ' (' + getBaseName(outputType) + ')');
+                    const number = parseInteger(value, base);
+                    const bases = [[2, '二进制'], [8, '八进制'], [10, '十进制'], [16, '十六进制']];
+                    if (extraBase !== undefined) bases.push([extraBase, '自定义 ' + extraBase + ' 进制']);
+                    for (const [outputBase, label] of bases) {
+                        const raw = number.toString(outputBase).toUpperCase();
+                        const row = element('div', 'conversion-row');
+                        row.dataset.base = outputBase;
+                        const output = element('div', 'result-value', outputBase === 2 || outputBase === 16 ? grouped(raw) : raw);
+                        output.dataset.copy = raw;
+                        output.dataset.label = label;
+                        const button = element('button', 'secondary value-copy', '复制');
+                        button.type = 'button';
+                        button.setAttribute('aria-label', '复制' + label + '结果');
+                        button.addEventListener('click', () => copyText(raw));
+                        row.append(element('div', 'result-title', label), output, button);
+                        box.append(row);
+                    }
                 } catch (error) {
-                    appendResult(value, '转换错误: ' + error.message, true);
+                    box.append(element('div', 'result-value inline-error', '转换错误: ' + error.message));
                 }
-
-            });
-        }
-        
-        function appendResult(value, result, isError = false) {
-            const box = document.createElement('div');
-            box.className = 'result-box';
-            const title = document.createElement('div');
-            title.className = 'result-title';
-            title.textContent = value + ' (' + getBaseName(document.getElementById('inputType').value) + ')';
-            const output = document.createElement('div');
-            output.className = 'result-value';
-            output.textContent = result;
-            if (isError) output.classList.add('inline-error');
-            else output.dataset.copy = result;
-            box.append(title, output);
-            document.getElementById('results').appendChild(box);
-        }
-
-        function getBaseName(base) {
-            switch(base) {
-                case '2': return '二进制';
-                case '8': return '八进制';
-                case '10': return '十进制';
-                case '16': return '十六进制';
-                default: return '';
+                resultsContainer.append(box);
             }
         }
-        
-        async function copyResults() {
-            const results = document.querySelectorAll('.result-value[data-copy]');
-            if (results.length === 0) {
-                showNotification('没有可复制的结果', true);
-                return;
-            }
-            
-            let textToCopy = '';
-            results.forEach(result => {
-                // 提取纯文本内容（去掉HTML标签）
-                textToCopy += result.textContent + '\n';
-            });
-            
+
+        async function copyText(text) {
             try {
                 if (!navigator.clipboard) throw new Error('当前环境不支持剪贴板，请手动选择结果复制');
-                await navigator.clipboard.writeText(textToCopy.trim());
+                await navigator.clipboard.writeText(text);
                 showNotification('结果已复制到剪贴板！');
             } catch (error) {
                 showNotification('复制失败: ' + error.message, true);
             }
         }
-        
-        function clearAll() {
-            document.getElementById('inputValue').value = '';
-            document.getElementById('results').innerHTML = `
-                <div class="result-box">
-                    <div class="result-title">等待输入</div>
-                    <div class="result-value">请输入数值并点击转换</div>
-                </div>
-            `;
+
+        function copyResults() {
+            const boxes = [...resultsContainer.querySelectorAll('.result-box')];
+            if (!resultsContainer.querySelector('[data-copy]')) {
+                showNotification('没有可复制的结果', true);
+                return;
+            }
+            copyText(boxes.map(box => [
+                box.querySelector('.result-title').textContent,
+                ...[...box.querySelectorAll('[data-copy]')].map(value => value.dataset.label + ': ' + value.dataset.copy),
+                ...[...box.querySelectorAll('.inline-error')].map(value => value.textContent)
+            ].join('\n')).join('\n\n'));
         }
-        
+
+        function clearAll() {
+            clearTimeout(conversionTimer);
+            inputValue.value = '';
+            convert();
+        }
+
         function showNotification(message, isError = false) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.classList.toggle('error', isError);
-            
             notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+            clearTimeout(notificationTimer);
+            notificationTimer = setTimeout(() => notification.classList.remove('show'), 3000);
         }
-        
-        // 初始示例值
-        document.getElementById('inputValue').value = '255\n1024\n4096';
+
+        function scheduleConversion() {
+            document.getElementById('customInputGroup').hidden = inputType.value !== 'custom';
+            clearTimeout(conversionTimer);
+            conversionTimer = setTimeout(convert, 150);
+        }
+
+        inputValue.addEventListener('input', scheduleConversion);
+        inputType.addEventListener('change', scheduleConversion);
+        customInputBase.addEventListener('input', scheduleConversion);
+        customOutputBase.addEventListener('input', scheduleConversion);
+        inputValue.value = '255\n1024\n4096';
+        convert();
     </script>
 </body>
 </html>

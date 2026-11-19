@@ -20,66 +20,67 @@
                 <a href="#data">Data</a>
                 <a href="#explorers">Explorers</a>
             </nav>
-            <div class="header-actions">
-                <button class="btn btn-outline">About</button>
-                <button class="btn btn-primary">Connect</button>
-            </div>
         </div>
     </header>
 
     <!-- Category Navigation -->
     <nav class="category-nav">
         <div class="category-nav-content">
-            <button class="category-btn active">All</button>
-            <button class="category-btn">Trading</button>
-            <button class="category-btn">Analytics</button>
-            <button class="category-btn">NFT</button>
-            <button class="category-btn">DeFi</button>
-            <button class="category-btn">Explorers</button>
-            <button class="category-btn">Bridges</button>
-            <button class="category-btn">Portfolio</button>
-            <button class="category-btn">Tools</button>
-            <button class="category-btn">News</button>
-            <button class="category-btn">Events</button>
-            <button class="category-btn">Personal</button>
+            <button type="button" class="category-btn active" aria-pressed="true" data-category="all">All</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="trading">Trading</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="analytics">Analytics</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="nft">NFT</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="defi">DeFi</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="explorers">Explorers</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="bridges">Bridges</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="portfolio">Portfolio</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="tools">Tools</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="news">News</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="events">Events</button>
+            <button type="button" class="category-btn" aria-pressed="false" data-category="personal">Personal</button>
         </div>
     </nav>
 
     <main class="container">
+        <div class="form-group">
+            <label for="platform-search">搜索平台或工具</label>
+            <input type="search" id="platform-search" placeholder="输入名称或描述…" autocomplete="off">
+        </div>
+        <p id="platform-empty" role="status" hidden>没有匹配的平台</p>
         <!-- Featured Section -->
         <section class="featured">
             <h2 class="featured-title">Featured Platforms</h2>
             <p class="featured-desc">Top trading and analytics platforms curated for you</p>
             <div class="featured-grid">
-                <a href="https://app.hyperliquid.xyz/trade" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="https://app.hyperliquid.xyz/trade" class="featured-card" data-categories="trading" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">Hyperliquid</h3>
                     <p class="featured-card-desc">Perpetuals DEX with fast execution</p>
                 </a>
-                <a href="https://app.stablewatch.io/" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="https://app.stablewatch.io/" class="featured-card" data-categories="analytics" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">Stablewatch</h3>
                     <p class="featured-card-desc">Stablecoin monitoring and analytics</p>
                 </a>
-                <a href="https://nof1.ai/" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="https://nof1.ai/" class="featured-card" data-categories="analytics" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">NOF1.AI</h3>
                     <p class="featured-card-desc">AI-powered trading analytics</p>
                 </a>
-                <a href="https://debank.com/" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="https://debank.com/" class="featured-card" data-categories="portfolio defi" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">DeBank</h3>
                     <p class="featured-card-desc">DeFi portfolio tracker</p>
                 </a>
-                <a href="timestamp-converter.html" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="timestamp-converter.html" class="featured-card" data-categories="tools" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">时间戳转换</h3>
                     <p class="featured-card-desc">秒/毫秒时间戳转本地时间和 UTC</p>
                 </a>
-                <a href="string-splitter.html" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="string-splitter.html" class="featured-card" data-categories="tools" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">逐行分拆</h3>
                     <p class="featured-card-desc">逐行按 3 个字符一组分拆字符串</p>
                 </a>
-                <a href="base-converter.html" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="base-converter.html" class="featured-card" data-categories="tools" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">进制转换</h3>
                     <p class="featured-card-desc">批量转换二、八、十及十六进制整数</p>
                 </a>
-                <a href="regex-tester.html" class="featured-card" target="_blank" rel="noopener noreferrer">
+                <a href="regex-tester.html" class="featured-card" data-categories="tools" target="_blank" rel="noopener noreferrer">
                     <h3 class="featured-card-title">正则表达式</h3>
                     <p class="featured-card-desc">测试匹配结果与查看速查表</p>
                 </a>
@@ -87,10 +88,9 @@
         </section>
 
         <!-- Trading Platforms -->
-        <section class="section" id="markets">
+        <section class="section" id="markets" data-category="trading">
             <div class="section-header">
                 <h2 class="section-title">Trading Platforms</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://app.hyperliquid.xyz/trade" class="card" target="_blank" rel="noopener noreferrer">
@@ -201,10 +201,9 @@
         </section>
 
         <!-- Analytics & Data -->
-        <section class="section" id="data">
+        <section class="section" id="data" data-category="analytics">
             <div class="section-header">
                 <h2 class="section-title">Analytics & Data</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://app.stablewatch.io/" class="card" target="_blank" rel="noopener noreferrer">
@@ -299,10 +298,9 @@
         </section>
 
         <!-- NFT Marketplaces -->
-        <section class="section">
+        <section class="section" data-category="nft">
             <div class="section-header">
                 <h2 class="section-title">NFT Marketplaces</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://magiceden.io/" class="card" target="_blank" rel="noopener noreferrer">
@@ -338,10 +336,9 @@
         </section>
 
         <!-- Blockchain Explorers -->
-        <section class="section" id="explorers">
+        <section class="section" id="explorers" data-category="explorers">
             <div class="section-header">
                 <h2 class="section-title">Blockchain Explorers</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://etherscan.io/" class="card" target="_blank" rel="noopener noreferrer">
@@ -437,10 +434,9 @@
         </section>
 
         <!-- Bridges -->
-        <section class="section">
+        <section class="section" data-category="bridges">
             <div class="section-header">
                 <h2 class="section-title">Bridges</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://bridge.arbitrum.io/" class="card" target="_blank" rel="noopener noreferrer">
@@ -476,10 +472,9 @@
         </section>
 
         <!-- Portfolio Trackers -->
-        <section class="section">
+        <section class="section" data-category="portfolio">
             <div class="section-header">
                 <h2 class="section-title">Portfolio Trackers</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://debank.com/" class="card" target="_blank" rel="noopener noreferrer">
@@ -515,10 +510,9 @@
         </section>
 
         <!-- Tools & Utilities -->
-        <section class="section" id="tools">
+        <section class="section" id="tools" data-category="tools">
             <div class="section-header">
                 <h2 class="section-title">Tools & Utilities</h2>
-                <a href="#" class="view-all">View all →</a>
             </div>
             <div class="grid">
                 <a href="https://www.strategicethreserve.xyz/" class="card" target="_blank" rel="noopener noreferrer">
@@ -575,12 +569,58 @@
                 <span class="footer-logo">Bad Rudi Castles</span>
             </div>
             <div class="footer-links">
-                <a href="#">About</a>
-                <a href="#">Twitter</a>
-                <a href="#">Discord</a>
-                <a href="#">GitHub</a>
+                <a href="https://github.com/bruce-cham/tools" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
         </div>
     </footer>
+    <script>
+        const search = document.getElementById('platform-search');
+        const categoryButtons = [...document.querySelectorAll('.category-btn')];
+        const sections = [...document.querySelectorAll('main section')];
+        let activeCategory = 'all';
+
+        function filterPlatforms() {
+            const query = search.value.trim().toLocaleLowerCase();
+            let visibleCount = 0;
+            for (const section of sections) {
+                let sectionCount = 0;
+                for (const card of section.querySelectorAll('.card, .featured-card')) {
+                    const categories = (card.dataset.categories || section.dataset.category || '').split(' ');
+                    if ([...card.querySelectorAll('.tag')].some(tag => tag.textContent.trim().toLowerCase() === 'defi')) {
+                        categories.push('defi');
+                    }
+                    const title = card.querySelector('h3').textContent;
+                    const description = card.querySelector('.card-desc, .featured-card-desc').textContent;
+                    const matchesSearch = (title + ' ' + description).toLocaleLowerCase().includes(query);
+                    const matchesCategory = activeCategory === 'all' || categories.includes(activeCategory);
+                    card.hidden = !(matchesSearch && matchesCategory);
+                    if (!card.hidden) sectionCount++;
+                }
+                section.hidden = sectionCount === 0;
+                visibleCount += sectionCount;
+            }
+            document.getElementById('platform-empty').hidden = visibleCount !== 0;
+        }
+
+        search.addEventListener('input', filterPlatforms);
+        function setCategory(button) {
+            activeCategory = button.dataset.category;
+            categoryButtons.forEach(category => {
+                const selected = category === button;
+                category.classList.toggle('active', selected);
+                category.setAttribute('aria-pressed', String(selected));
+            });
+            filterPlatforms();
+        }
+        categoryButtons.forEach(button => button.addEventListener('click', () => setCategory(button)));
+        document.querySelectorAll('.nav-links a[href^="#"]').forEach(link => link.addEventListener('click', () => {
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target && target.hidden) {
+                search.value = '';
+                setCategory(categoryButtons.find(button => button.dataset.category === 'all'));
+            }
+        }));
+        filterPlatforms();
+    </script>
 </body>
 </html>
