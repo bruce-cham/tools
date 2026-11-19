@@ -102,6 +102,7 @@ input + button { margin-top: 12px; }
     overflow-wrap: anywhere;
 }
 #result { margin-top: 20px; white-space: pre-line; min-height: 64px; }
+#result:empty { display: none; }
 .result-title { font-size: .9rem; color: var(--muted); margin-bottom: 8px; }
 .result-value { font-size: 1.1rem; overflow-wrap: anywhere; }
 .no-matches, [role="status"] { color: var(--muted); }
