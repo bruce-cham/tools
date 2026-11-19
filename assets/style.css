@@ -106,6 +106,8 @@ input + button { margin-top: 12px; }
 #match-result.matches > div { white-space: pre-wrap; }
 .result-title { font-size: .9rem; color: var(--muted); margin-bottom: 8px; }
 .result-value { font-size: 1.1rem; overflow-wrap: anywhere; }
+.conversion-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.value-copy { padding: 4px 10px; margin-top: 8px; font-size: .85rem; }
 .no-matches, [role="status"] { color: var(--muted); }
 .inline-error { color: var(--error); }
 .notification {
