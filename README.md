@@ -3,10 +3,10 @@
 #### 在线工具
 
 - [工具导航](index.html)
-- [时间戳转换器](timestamps.html)：自动识别秒或13位毫秒，显示本地时间和 UTC。
-- [逐行字符串分拆](vinRPOsplit.html)：每三个字符分组，支持复制结果。
-- [进制转换](carrysystem.html)：支持大整数和批量转换。
-- [正则表达式测试](regularexpressions.html)：匹配测试、标志设置和速查表。
+- [时间戳转换器](timestamp-converter.html)：自动识别秒或13位毫秒，显示本地时间和 UTC。
+- [逐行字符串分拆](string-splitter.html)：每三个字符分组，支持复制结果。
+- [进制转换](base-converter.html)：支持大整数和批量转换。
+- [正则表达式测试](regex-tester.html)：匹配测试、标志设置和速查表。
 
 
 #### 如果你确实需要让 Git GUI 完全隐藏到通知区域（系统托盘），需要借助第三方工具：

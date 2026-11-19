@@ -4,45 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>逐行字符串分拆工具</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-
-    }
-    .container {
-
-        display: flex;
-        justify-content: space-around;
-        align-items: flex-start;
-        margin-top: 20px;
-    }
-    textarea {
-        width: 45%;
-        height: 300px;
-        padding: 10px;
-        font-size: 16px;
-
-    }
-    button {
-        margin-top: 20px;
-        padding: 10px 20px;
-        font-size: 16px;
-
-    }
-
-</style>
+    <link rel="stylesheet" href="assets/style.css">
 </head>
-<body>
+<body class="tool-page">
 
-<div class="container">
-    <textarea id="inputText" placeholder="在这里粘贴文本..."></textarea>
+<main class="container">
+    <header class="page-header">
+        <a class="back-link" href="index.html">← 返回首页</a>
+        <h1>逐行字符串分拆工具</h1>
+        <p class="description">每三个字符分组，支持多行文本与一键复制。</p>
+    </header>
+    <div class="panel splitter-grid">
+    <label for="inputText">输入文本<textarea id="inputText" placeholder="在这里粘贴文本..."></textarea></label>
     <div class="button-container">
         <button onclick="splitText()">分拆</button>
-        <button onclick="copyToClipboard()">复制结果</button>
+        <button class="secondary" onclick="copyToClipboard()">复制结果</button>
     </div>
-    <textarea id="outputText" placeholder="分拆后的结果会显示在这里..." readonly></textarea>
+    <label for="outputText">分拆结果<textarea id="outputText" placeholder="分拆后的结果会显示在这里..." readonly></textarea></label>
 </div>
 <p id="copyStatus" role="status"></p>
+
+</main>
 
 <script>
 function splitLineInThrees(line) {
