@@ -25,6 +25,7 @@
     }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
     margin: 0;
     background: var(--bg);
@@ -108,6 +109,10 @@ input + button { margin-top: 12px; }
 .result-value { font-size: 1.1rem; overflow-wrap: anywhere; }
 .conversion-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
 .value-copy { padding: 4px 10px; margin-top: 8px; font-size: .85rem; }
+.timestamp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; overflow-wrap: anywhere; }
+.timestamp-row .value-copy { margin: 0; }
+.timestamp-row [data-output] { min-width: 0; }
+#result .timestamp-row { white-space: normal; }
 .regex-flags { display: flex; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border); border-radius: 8px; margin: 0 0 20px; }
 .regex-flags label { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
 .regex-flags input { width: auto; accent-color: var(--accent); }
