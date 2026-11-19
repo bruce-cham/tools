@@ -603,7 +603,7 @@
         }
 
         search.addEventListener('input', filterPlatforms);
-        categoryButtons.forEach(button => button.addEventListener('click', () => {
+        function setCategory(button) {
             activeCategory = button.dataset.category;
             categoryButtons.forEach(category => {
                 const selected = category === button;
@@ -611,6 +611,14 @@
                 category.setAttribute('aria-pressed', String(selected));
             });
             filterPlatforms();
+        }
+        categoryButtons.forEach(button => button.addEventListener('click', () => setCategory(button)));
+        document.querySelectorAll('.nav-links a[href^="#"]').forEach(link => link.addEventListener('click', () => {
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target && target.hidden) {
+                search.value = '';
+                setCategory(categoryButtons.find(button => button.dataset.category === 'all'));
+            }
         }));
         filterPlatforms();
     </script>
