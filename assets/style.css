@@ -108,6 +108,15 @@ input + button { margin-top: 12px; }
 .result-value { font-size: 1.1rem; overflow-wrap: anywhere; }
 .conversion-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
 .value-copy { padding: 4px 10px; margin-top: 8px; font-size: .85rem; }
+.regex-flags { display: flex; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border); border-radius: 8px; margin: 0 0 20px; }
+.regex-flags label { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.regex-flags input { width: auto; accent-color: var(--accent); }
+.regex-preview, .regex-match { white-space: pre-wrap; overflow-wrap: anywhere; }
+.regex-match + .regex-match { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.regex-preview { min-height: 64px; }
+.regex-preview mark { background: var(--accent); color: var(--surface); border-radius: 2px; }
+.regex-preview .zero-match { display: inline-block; height: 1em; border-left: 2px solid var(--accent); vertical-align: text-bottom; }
+#copy-replacement { margin-top: 12px; }
 .no-matches, [role="status"] { color: var(--muted); }
 .inline-error { color: var(--error); }
 .notification {

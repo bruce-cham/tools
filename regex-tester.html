@@ -28,10 +28,15 @@
                     <input type="text" id="regex-input" class="regex-input" placeholder="例如: [A-Za-z]+\\d+">
                 </div>
                 
-                <div class="input-group">
-                    <label for="regex-flags">标志（例如 g、i、m、s、u、y）</label>
-                    <input type="text" id="regex-flags" class="regex-input" value="g" spellcheck="false">
-                </div>
+                <fieldset class="regex-flags" id="regex-flags">
+                    <legend>标志</legend>
+                    <label><input type="checkbox" value="g" checked> g</label>
+                    <label><input type="checkbox" value="i"> i</label>
+                    <label><input type="checkbox" value="m"> m</label>
+                    <label><input type="checkbox" value="s"> s</label>
+                    <label><input type="checkbox" value="u"> u</label>
+                    <label><input type="checkbox" value="y"> y</label>
+                </fieldset>
 
                 <div class="input-group">
                     <label for="test-text">测试文本</label>
@@ -48,6 +53,10 @@
 &lt;/div&gt;</textarea>
                 </div>
                 
+                <div class="input-group">
+                    <label for="replacement">替换为（可选，支持 $1、$&lt;name&gt;）</label>
+                    <input type="text" id="replacement" placeholder="留空时不显示替换预览">
+                </div>
                 <div class="button-container">
                     <button class="test-btn" id="test-btn">
                         <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18px" height="18px">
@@ -67,7 +76,19 @@
                 
                 <div class="result-container">
                     <div class="result-title">匹配结果:</div>
-                    <div id="match-result" class="no-matches">尚未进行测试</div>
+                    <p id="match-status" role="status">尚未进行测试</p>
+                    <p class="description">位置从 0 开始，按 UTF-16 码元计数；结束位置不包含在匹配内。</p>
+                    <div id="match-result" class="no-matches"></div>
+                </div>
+                <div class="result-container">
+                    <h3>文本匹配预览</h3>
+                    <div id="match-preview" class="result-box regex-preview" aria-label="文本匹配预览"></div>
+                </div>
+                <div id="replacement-section" class="result-container" hidden>
+                    <h3>替换预览</h3>
+                    <div id="replacement-result" class="result-box regex-preview"></div>
+                    <button id="copy-replacement" class="secondary" type="button">复制替换结果</button>
+                    <p id="replacement-status" role="status"></p>
                 </div>
             </div>
             
@@ -157,77 +178,206 @@
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const regexInput = document.getElementById('regex-input');
-            const testText = document.getElementById('test-text');
-            const testBtn = document.getElementById('test-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const matchResult = document.getElementById('match-result');
-            const exampleCards = document.querySelectorAll('.example-card');
-            
-            // 测试按钮事件
-            testBtn.addEventListener('click', testRegex);
-            
-            // 清除按钮事件
-            clearBtn.addEventListener('click', function() {
-                regexInput.value = '';
-                testText.value = '';
-                matchResult.textContent = '尚未进行测试';
-                matchResult.className = 'no-matches';
-            });
-            
-            // 示例卡片点击事件
-            exampleCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    const regex = this.getAttribute('data-regex');
-                    regexInput.value = regex;
-                    testRegex();
-                });
-            });
-            
-            // 测试正则表达式函数
-            function testRegex() {
-                const regexValue = regexInput.value;
-                const testValue = testText.value;
-                
-                if (!regexValue) {
-                    matchResult.textContent = '请输入正则表达式';
-                    matchResult.className = 'no-matches';
-                    return;
-                }
-                
+        const regexInput = document.getElementById('regex-input');
+        const testText = document.getElementById('test-text');
+        const replacement = document.getElementById('replacement');
+        const flags = [...document.querySelectorAll('#regex-flags input')];
+        const matchResult = document.getElementById('match-result');
+        const matchStatus = document.getElementById('match-status');
+        const preview = document.getElementById('match-preview');
+        const replacementSection = document.getElementById('replacement-section');
+        const replacementResult = document.getElementById('replacement-result');
+        const replacementStatus = document.getElementById('replacement-status');
+        let worker;
+        let timeout;
+        let debounce;
+
+        function matchInWorker() {
+            self.onmessage = event => {
+                const { pattern, flags, text, replacement } = event.data;
                 try {
-                    // 创建正则表达式对象
-                    const regex = new RegExp(regexValue, document.getElementById('regex-flags').value);
-                    
-                    // 执行匹配
-                    const matches = regex.global
-                        ? testValue.match(regex)
-                        : (() => { const match = regex.exec(testValue); return match ? [match[0]] : null; })();
-                    
-                    if (matches && matches.length > 0) {
-                        // 显示匹配结果
-                        matchResult.textContent = '';
-                        matches.forEach((match, index) => {
-                            const matchElement = document.createElement('div');
-                            matchElement.textContent = `${index + 1}. ${match === '' ? '（空匹配）' : match}`;
-                            matchResult.appendChild(matchElement);
+                    const regex = new RegExp(pattern, flags);
+                    const matches = [];
+                    let match;
+                    while ((match = regex.exec(text)) !== null) {
+                        if (matches.length >= 10000) throw new Error('匹配结果过多，请缩小测试文本（最多 10000 项）');
+                        matches.push({
+                            value: match[0],
+                            start: match.index,
+                            end: match.index + match[0].length,
+                            captures: match.slice(1),
+                            groups: match.groups
                         });
-                        matchResult.className = 'matches';
-                    } else {
-                        matchResult.textContent = '没有找到匹配项';
-                        matchResult.className = 'no-matches';
+                        if (!regex.global) break;
+                        if (match[0] === '') {
+                            const code = text.codePointAt(regex.lastIndex);
+                            regex.lastIndex += regex.unicode && code > 0xffff ? 2 : 1;
+                        }
                     }
+                    const replaced = replacement === '' ? null : text.replace(new RegExp(pattern, flags), replacement);
+                    self.postMessage({ matches, replaced });
                 } catch (error) {
-                    matchResult.textContent = `错误: ${error.message}`;
-                    matchResult.className = 'no-matches';
+                    self.postMessage({ error: error.message });
                 }
+            };
+        }
+
+        const workerURL = URL.createObjectURL(new Blob(
+            ['(' + matchInWorker.toString() + ')()'],
+            { type: 'text/javascript' }
+        ));
+
+        function stopWorker() {
+            clearTimeout(timeout);
+            if (worker) worker.terminate();
+            worker = null;
+        }
+
+        function resetResults(message) {
+            matchResult.replaceChildren();
+            matchStatus.textContent = message;
+            matchStatus.classList.remove('inline-error');
+            matchResult.className = 'no-matches';
+            preview.textContent = testText.value;
+            replacementSection.hidden = true;
+            replacementResult.textContent = '';
+            replacementStatus.textContent = '';
+        }
+
+        function showError(message) {
+            resetResults(message);
+            matchStatus.classList.add('inline-error');
+        }
+
+        function renderMatches(matches, text) {
+            matchResult.className = 'matches';
+            matchStatus.textContent = '匹配数量：' + matches.length + (matches.length ? '' : '；没有找到匹配项');
+            const fragment = document.createDocumentFragment();
+            let cursor = 0;
+            for (const [index, match] of matches.entries()) {
+                const item = document.createElement('div');
+                item.className = 'regex-match';
+                const title = document.createElement('div');
+                title.textContent = (index + 1) + '. [' + match.start + '–' + match.end + ') ' +
+                    (match.value === '' ? '（空匹配）' : match.value);
+                item.append(title);
+                for (const [group, value] of match.captures.entries()) {
+                    const row = document.createElement('div');
+                    row.textContent = '分组 ' + (group + 1) + '：' + (value === undefined ? '（未匹配）' : value);
+                    item.append(row);
+                }
+                for (const [name, value] of Object.entries(match.groups || {})) {
+                    const row = document.createElement('div');
+                    row.textContent = '命名分组 ' + name + '：' + (value === undefined ? '（未匹配）' : value);
+                    item.append(row);
+                }
+                matchResult.append(item);
+                fragment.append(document.createTextNode(text.slice(cursor, match.start)));
+                const mark = document.createElement('mark');
+                if (match.start === match.end) {
+                    mark.className = 'zero-match';
+                    mark.setAttribute('aria-label', '空匹配，位置 ' + match.start);
+                } else {
+                    mark.textContent = text.slice(match.start, match.end);
+                }
+                fragment.append(mark);
+                cursor = match.end;
             }
-            
-            // 初始示例测试
-            regexInput.value = '<a[^>]*>([^<]+)</a>';
-            testRegex();
+            fragment.append(document.createTextNode(text.slice(cursor)));
+            preview.replaceChildren(fragment);
+        }
+
+        function testRegex() {
+            clearTimeout(debounce);
+            stopWorker();
+            resetResults('正在匹配…');
+            if (!regexInput.value) {
+                matchStatus.textContent = '请输入正则表达式';
+                return;
+            }
+            const text = testText.value;
+            try {
+                const current = new Worker(workerURL);
+                worker = current;
+                timeout = setTimeout(() => {
+                    if (worker !== current) return;
+                    stopWorker();
+                    showError('匹配超时，可能是灾难性回溯');
+                }, 1000);
+                current.onmessage = event => {
+                    if (worker !== current) return;
+                    stopWorker();
+                    const { matches, replaced, error } = event.data;
+                    if (error) {
+                        showError('错误: ' + error);
+                        return;
+                    }
+                    renderMatches(matches, text);
+                    if (replaced !== null) {
+                        replacementResult.textContent = replaced;
+                        replacementSection.hidden = false;
+                    }
+                };
+                current.onerror = event => {
+                    event.preventDefault();
+                    if (worker !== current) return;
+                    stopWorker();
+                    showError('错误: 无法运行匹配线程');
+                };
+                current.postMessage({
+                    pattern: regexInput.value,
+                    flags: flags.filter(flag => flag.checked).map(flag => flag.value).join(''),
+                    text,
+                    replacement: replacement.value
+                });
+            } catch (error) {
+                stopWorker();
+                showError('错误: ' + error.message);
+            }
+        }
+
+        function scheduleMatch() {
+            clearTimeout(debounce);
+            stopWorker();
+            resetResults('等待匹配…');
+            debounce = setTimeout(testRegex, 200);
+        }
+
+        for (const input of [regexInput, testText, replacement]) {
+            input.addEventListener('input', scheduleMatch);
+        }
+        flags.forEach(flag => flag.addEventListener('change', scheduleMatch));
+        document.getElementById('test-btn').addEventListener('click', testRegex);
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            clearTimeout(debounce);
+            stopWorker();
+            regexInput.value = '';
+            testText.value = '';
+            replacement.value = '';
+            flags.forEach(flag => { flag.checked = flag.value === 'g'; });
+            resetResults('尚未进行测试');
         });
+        document.querySelectorAll('.example-card').forEach(card => {
+            card.addEventListener('click', () => {
+                regexInput.value = card.dataset.regex;
+                scheduleMatch();
+            });
+        });
+        document.getElementById('copy-replacement').addEventListener('click', async () => {
+            try {
+                if (!navigator.clipboard) throw new Error('当前环境不支持剪贴板，请手动选择复制');
+                await navigator.clipboard.writeText(replacementResult.textContent);
+                replacementStatus.textContent = '替换结果已复制';
+            } catch (error) {
+                replacementStatus.textContent = '复制失败: ' + error.message;
+            }
+        });
+        window.addEventListener('pagehide', () => {
+            clearTimeout(debounce);
+            stopWorker();
+        });
+        regexInput.value = '<a[^>]*>([^<]+)</a>';
+        testRegex();
     </script>
 </body>
 </html>
