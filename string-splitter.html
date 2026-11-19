@@ -12,52 +12,102 @@
     <header class="page-header">
         <a class="back-link" href="index.html">← 返回首页</a>
         <h1>逐行字符串分拆工具</h1>
-        <p class="description">每三个字符分组，支持多行文本与一键复制。</p>
+        <p class="description">自定义字符分组与分隔符，实时处理多行文本并保持完整表情。</p>
     </header>
+    <div class="panel">
+        <div class="input-section">
+            <div>
+                <label for="chunkSize">每组字符数（1–100）</label>
+                <input type="number" id="chunkSize" min="1" max="100" step="1" value="3">
+            </div>
+            <div>
+                <label for="separator">分隔符</label>
+                <select id="separator">
+                    <option value="space">空格</option>
+                    <option value="comma">逗号</option>
+                    <option value="hyphen">短横线 -</option>
+                    <option value="newline">换行</option>
+                    <option value="custom">自定义</option>
+                </select>
+                <div id="customSeparatorGroup" hidden>
+                    <label for="customSeparator">自定义分隔符</label>
+                    <input type="text" id="customSeparator" placeholder="可留空">
+                </div>
+            </div>
+        </div>
+        <p id="splitStatus" class="inline-error" role="status"></p>
+    </div>
     <div class="panel splitter-grid">
     <label for="inputText">输入文本<textarea id="inputText" placeholder="在这里粘贴文本..."></textarea></label>
     <div class="button-container">
         <button onclick="splitText()">分拆</button>
         <button class="secondary" onclick="copyToClipboard()">复制结果</button>
+        <button class="secondary" onclick="clearText()">清空</button>
     </div>
     <label for="outputText">分拆结果<textarea id="outputText" placeholder="分拆后的结果会显示在这里..." readonly></textarea></label>
 </div>
+<p id="stats" role="status">行数：0 / 字符数：0 / 分组数：0</p>
+<p class="description">字符数按修剪后的文本计数（不含换行）；支持时按完整字素分组，否则按 Unicode 码点分组。</p>
 <p id="copyStatus" role="status"></p>
 
 </main>
 
 <script>
-function splitLineInThrees(line) {
-    // 分割单行文本为每三个字符一组，并用空格连接
-    return line.match(/.{1,3}/gu)?.join(' ') || '';
+const segmenter = typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter('zh-CN', { granularity: 'grapheme' })
+    : null;
+
+function characters(text) {
+    return segmenter ? Array.from(segmenter.segment(text), item => item.segment) : Array.from(text);
 }
 
 function splitText() {
-    // 获取输入文本框的内容
-    const inputText = document.getElementById('inputText').value;
+    const input = document.getElementById('inputText').value;
+    const size = Number(document.getElementById('chunkSize').value);
+    const separatorType = document.getElementById('separator').value;
+    document.getElementById('customSeparatorGroup').hidden = separatorType !== 'custom';
     document.getElementById('copyStatus').textContent = '';
-
-    // 按行分割输入文本
-    const lines = inputText.split('\n');
-
-    // 对每一行进行分拆处理
-    const processedLines = lines.map(line => {
-        // 移除行首和行尾的空白字符
-        const cleanLine = line.trim();
-
-        // 如果行为空，则返回空字符串
-        if (!cleanLine) return '';
-
-        // 调用函数对单行进行分拆
-        return splitLineInThrees(cleanLine);
-    });
-
-    // 将处理后的各行重新组合成一个字符串，每行之间用换行符分隔
-    const resultText = processedLines.join('\n');
-
-    // 将分拆后的结果显示在输出文本框中
-    document.getElementById('outputText').value = resultText;
+    const status = document.getElementById('splitStatus');
+    const output = document.getElementById('outputText');
+    const stats = document.getElementById('stats');
+    status.textContent = '';
+    if (!Number.isInteger(size) || size < 1 || size > 100) {
+        status.textContent = '每组字符数必须是 1–100 之间的整数';
+        output.value = '';
+        stats.textContent = '行数：— / 字符数：— / 分组数：—';
+        return;
+    }
+    const separators = { space: ' ', comma: ',', hyphen: '-', newline: '\n' };
+    const separator = separatorType === 'custom'
+        ? document.getElementById('customSeparator').value
+        : separators[separatorType];
+    const lines = input === '' ? [] : input.split('\n');
+    let characterCount = 0;
+    let groupCount = 0;
+    output.value = lines.map(line => {
+        const chars = characters(line.trim());
+        characterCount += chars.length;
+        const groups = [];
+        for (let index = 0; index < chars.length; index += size) {
+            groups.push(chars.slice(index, index + size).join(''));
+        }
+        groupCount += groups.length;
+        return groups.join(separator);
+    }).join('\n');
+    stats.textContent = '行数：' + lines.length + ' / 字符数：' + characterCount + ' / 分组数：' + groupCount;
 }
+
+function clearText() {
+    document.getElementById('inputText').value = '';
+    splitText();
+}
+
+for (const id of ['inputText', 'chunkSize', 'customSeparator']) {
+    document.getElementById(id).addEventListener('input', splitText);
+}
+document.getElementById('separator').addEventListener('change', splitText);
+splitText();
+
 async function copyToClipboard() {
     const output = document.getElementById('outputText');
     const status = document.getElementById('copyStatus');
